@@ -1,2 +1,4 @@
-.env*
-venv*venv/
+.env
+.env.*
+venv/
+storage/

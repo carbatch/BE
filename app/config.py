@@ -11,6 +11,6 @@ VENICE_MODEL     = os.getenv("VENICE_MODEL", "z-image-turbo")
 POLLINATIONS_MODEL = os.getenv("POLLINATIONS_MODEL", "flux")
 
 openai_client = AsyncOpenAI(
-    api_key=OPENAI_API_KEY,
+    api_key=OPENAI_API_KEY or "dummy",
     timeout=TIMEOUT_SECONDS,
 )

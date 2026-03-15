@@ -6,10 +6,16 @@ import time
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.config import ALLOWED_ORIGINS
+from app.database import init_db
 from app.routes import openai as openai_router
 from app.routes import pollinations as pollinations_router
+from app.routes import style as style_router
+from app.routes import history as history_router
+from app.routes import pages as pages_router
 
 app = FastAPI(title="Batch Image Studio AI Backend", version="2.0.0")
 
@@ -23,6 +29,15 @@ app.add_middleware(
 
 app.include_router(pollinations_router.router, prefix="/api/v1")
 app.include_router(openai_router.router, prefix="/api/v1")
+app.include_router(style_router.router, prefix="/api/v1")
+app.include_router(history_router.router, prefix="/api/v1")
+app.include_router(pages_router.router, prefix="/api/v1")
+
+# DB 초기화 및 정적 파일 서빙
+init_db()
+_storage_images = Path(__file__).parent / "storage" / "images"
+_storage_images.mkdir(parents=True, exist_ok=True)
+app.mount("/storage/images", StaticFiles(directory=str(_storage_images)), name="images")
 
 
 @app.get("/")

@@ -3,7 +3,9 @@ import asyncio
 from fastapi import APIRouter, HTTPException
 
 from app.config import openai_client, IMAGE_MODEL
+from app.database import save_generation
 from app.models import GenerateRequest, GenerateResponse
+from app.storage import save_images
 
 router = APIRouter()
 
@@ -41,5 +43,8 @@ async def generate_images(req: GenerateRequest):
 
     if not images:
         raise HTTPException(status_code=502, detail=f"이미지를 생성하지 못했습니다: {last_error}")
+
+    saved_paths = save_images(req.id, images)
+    save_generation(req.id, req.prompt, "dall-e", saved_paths, page_id=req.page_id)
 
     return GenerateResponse(images=images)
