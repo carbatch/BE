@@ -10,6 +10,14 @@ def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with _conn() as conn:
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                username      TEXT    NOT NULL UNIQUE,
+                password_hash TEXT    NOT NULL,
+                created_at    TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS pages (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 title      TEXT    NOT NULL DEFAULT '새 채팅',
@@ -33,6 +41,7 @@ def init_db():
             "ALTER TABLE generations ADD COLUMN status TEXT NOT NULL DEFAULT 'done'",
             "ALTER TABLE generations ADD COLUMN error_msg TEXT",
             "ALTER TABLE generations ADD COLUMN gen_count INTEGER NOT NULL DEFAULT 2",
+            "ALTER TABLE pages ADD COLUMN user_id INTEGER REFERENCES users(id)",
         ]:
             try:
                 conn.execute(col_sql)
@@ -57,12 +66,41 @@ def _conn():
         conn.close()
 
 
-# ── Pages ──────────────────────────────────────────────────────────────────
+# ── Users ──────────────────────────────────────────────────────────────────
 
-def create_page(title: str = "새 채팅") -> dict:
+def create_user(username: str, password_hash: str) -> dict:
     with _conn() as conn:
         cur = conn.execute(
-            "INSERT INTO pages (title) VALUES (?)", (title,)
+            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+            (username, password_hash),
+        )
+        conn.commit()
+        row = conn.execute("SELECT id, username, created_at FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
+        return dict(row)
+
+
+def get_user_by_username(username: str) -> dict | None:
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT id, username, password_hash, created_at FROM users WHERE username = ?", (username,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def get_user_by_id(user_id: int) -> dict | None:
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT id, username, created_at FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+# ── Pages ──────────────────────────────────────────────────────────────────
+
+def create_page(title: str = "새 채팅", user_id: int | None = None) -> dict:
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO pages (title, user_id) VALUES (?, ?)", (title, user_id)
         )
         conn.commit()
         page_id = cur.lastrowid
@@ -70,11 +108,14 @@ def create_page(title: str = "새 채팅") -> dict:
         return dict(row)
 
 
-def list_pages() -> list[dict]:
+def list_pages(user_id: int | None = None) -> list[dict]:
     with _conn() as conn:
-        rows = conn.execute(
-            "SELECT * FROM pages ORDER BY id DESC"
-        ).fetchall()
+        if user_id is not None:
+            rows = conn.execute(
+                "SELECT * FROM pages WHERE user_id = ? ORDER BY id DESC", (user_id,)
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM pages ORDER BY id DESC").fetchall()
     return [dict(r) for r in rows]
 
 

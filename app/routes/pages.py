@@ -1,31 +1,32 @@
 import io
 import zipfile
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.database import create_page, list_pages, get_page, rename_page, delete_page, get_page_generations
 from app.models import CreatePageRequest, RenamePageRequest, PageResponse
+from app.routes.auth import get_current_user
 from app.storage import IMAGES_DIR
 
 router = APIRouter()
 
 
 @router.post("/pages", response_model=PageResponse)
-async def create_new_page(req: CreatePageRequest):
-    page = create_page(req.title)
+async def create_new_page(req: CreatePageRequest, current_user=Depends(get_current_user)):
+    page = create_page(req.title, user_id=current_user["id"])
     return page
 
 
 @router.get("/pages", response_model=list[PageResponse])
-async def get_pages():
-    return list_pages()
+async def get_pages(current_user=Depends(get_current_user)):
+    return list_pages(user_id=current_user["id"])
 
 
 @router.get("/pages/{page_id}/generations")
-async def get_generations(page_id: int):
+async def get_generations(page_id: int, current_user=Depends(get_current_user)):
     page = get_page(page_id)
-    if not page:
+    if not page or page.get("user_id") != current_user["id"]:
         raise HTTPException(status_code=404, detail="페이지를 찾을 수 없습니다.")
     gens = get_page_generations(page_id)
     return [
@@ -41,18 +42,18 @@ async def get_generations(page_id: int):
 
 
 @router.patch("/pages/{page_id}", response_model=PageResponse)
-async def update_page_title(page_id: int, req: RenamePageRequest):
+async def update_page_title(page_id: int, req: RenamePageRequest, current_user=Depends(get_current_user)):
     page = get_page(page_id)
-    if not page:
+    if not page or page.get("user_id") != current_user["id"]:
         raise HTTPException(status_code=404, detail="페이지를 찾을 수 없습니다.")
     rename_page(page_id, req.title)
     return get_page(page_id)
 
 
 @router.get("/pages/{page_id}/download-zip")
-async def download_page_zip(page_id: int):
+async def download_page_zip(page_id: int, current_user=Depends(get_current_user)):
     page = get_page(page_id)
-    if not page:
+    if not page or page.get("user_id") != current_user["id"]:
         raise HTTPException(status_code=404, detail="페이지를 찾을 수 없습니다.")
 
     gens = get_page_generations(page_id)
@@ -79,9 +80,9 @@ async def download_page_zip(page_id: int):
 
 
 @router.delete("/pages/{page_id}")
-async def remove_page(page_id: int):
+async def remove_page(page_id: int, current_user=Depends(get_current_user)):
     page = get_page(page_id)
-    if not page:
+    if not page or page.get("user_id") != current_user["id"]:
         raise HTTPException(status_code=404, detail="페이지를 찾을 수 없습니다.")
     delete_page(page_id)
     return {"ok": True}

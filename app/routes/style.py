@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.config import openai_client
 from app.models import ExtractStyleRequest, ExtractStyleResponse
+from app.routes.auth import get_current_user
 
 router = APIRouter()
 
@@ -14,7 +15,7 @@ STYLE_EXTRACTION_PROMPT = (
 
 
 @router.post("/extract-style", response_model=ExtractStyleResponse)
-async def extract_style(req: ExtractStyleRequest):
+async def extract_style(req: ExtractStyleRequest, _=Depends(get_current_user)):
     if not req.image or not req.image.strip():
         raise HTTPException(status_code=400, detail="image 필드가 비어있습니다.")
 

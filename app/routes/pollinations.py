@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.config import openai_client, IMAGE_MODEL
 from app.database import (
@@ -11,6 +11,7 @@ from app.database import (
     get_generation_by_prompt_id,
 )
 from app.models import GenerateRequest, GenerateAsyncResponse, GenerationStatusResponse
+from app.routes.auth import get_current_user
 from app.storage import save_images
 
 router = APIRouter()
@@ -20,7 +21,7 @@ _bg_tasks: set[asyncio.Task] = set()
 
 
 @router.post("/generate", response_model=GenerateAsyncResponse)
-async def generate_images(req: GenerateRequest):
+async def generate_images(req: GenerateRequest, _=Depends(get_current_user)):
     if not req.prompt or not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt 필드가 비어있습니다.")
 

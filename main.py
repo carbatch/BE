@@ -16,6 +16,7 @@ from app.routes import pollinations as pollinations_router
 from app.routes import style as style_router
 from app.routes import history as history_router
 from app.routes import pages as pages_router
+from app.routes import auth as auth_router
 
 app = FastAPI(title="Batch Image Studio AI Backend", version="2.0.0")
 
@@ -32,6 +33,7 @@ app.include_router(openai_router.router, prefix="/api/v1")
 app.include_router(style_router.router, prefix="/api/v1")
 app.include_router(history_router.router, prefix="/api/v1")
 app.include_router(pages_router.router, prefix="/api/v1")
+app.include_router(auth_router.router, prefix="/api/v1")
 
 # DB 초기화 및 정적 파일 서빙
 init_db()
