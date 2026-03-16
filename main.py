@@ -57,7 +57,7 @@ if __name__ == "__main__":
     import socket
 
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", 8081))
+    port = int(os.getenv("PORT", 8080))
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if s.connect_ex(("localhost", port)) == 0:
