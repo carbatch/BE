@@ -47,7 +47,7 @@ cp .env.example .env
 ### 4. 서버 실행
 
 ```bash
-python main.py
+uvicorn main:app --port 8080
 ```
 
 서버가 `http://localhost:8080` 에서 시작됩니다.
